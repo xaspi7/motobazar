@@ -1,6 +1,6 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import{createRoot}from'react-dom/client';
-import{Search,Heart,Plus,Menu,X,SlidersHorizontal,MapPin,Gauge,CalendarDays,ChevronLeft,ChevronRight,ArrowUpRight,ArrowRight,Bike,Check,GitCompareArrows,ShieldCheck,Clock3,Info,Phone,Mail,Share2,LayoutGrid,RotateCcw,CheckCircle2,ArrowLeft,Building2}from'lucide-react';
+import{Search,Heart,Plus,Menu,X,SlidersHorizontal,MapPin,Gauge,CalendarDays,ChevronLeft,ChevronRight,ArrowUpRight,ArrowRight,Bike,Check,GitCompareArrows,ShieldCheck,Clock3,Info,Phone,Mail,Share2,LayoutGrid,RotateCcw,Bell,CheckCircle2,ArrowLeft,Building2}from'lucide-react';
 import{listings,brands,categories,money,number,type Listing}from'./data';
 import './style.css';
 type View='home'|'catalog'|'detail'|'favorites'|'compare'|'dealers';
