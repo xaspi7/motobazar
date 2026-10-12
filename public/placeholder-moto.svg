@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 480">
+<defs><linearGradient id="bg" x2="1" y2="1"><stop stop-color="#25282f"/><stop offset="1" stop-color="#121418"/></linearGradient></defs>
+<rect width="800" height="480" fill="url(#bg)"/>
+<path d="M0 400h800" stroke="#34373d" stroke-width="3"/><path d="M0 410h800" stroke="#23262b" stroke-width="14"/>
+<g fill="none" stroke="#9599a1" stroke-linecap="round" stroke-linejoin="round">
+<circle cx="230" cy="320" r="81" stroke-width="16"/><circle cx="605" cy="320" r="81" stroke-width="16"/>
+<path d="m230 320 124-128 127 100 124 28 M230 320h202l-78-128 151-20 75 148M392 174h-90l-38-43" stroke-width="15"/>
+<path d="m465 179 84-30 90 25 32 46-74 4M354 192l58-47h77M350 193l-45 49 62 17" stroke="#FA3F47" stroke-width="19"/>
+<path d="m570 150 25-31 55 1M429 291l25 36" stroke-width="11"/>
+</g>
+<text x="400" y="446" text-anchor="middle" fill="#7e838c" font-family="Arial,sans-serif" font-weight="700" font-size="17" letter-spacing="5">MOTOBAZAR</text>
+</svg>

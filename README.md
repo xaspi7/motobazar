@@ -23,3 +23,9 @@ Otevri URL vypsanou Vite. Produkcni build: `npm run build`.
 ## Omezeni
 
 Demo neni napojeno na realne inzercni portaly, statni registr, autentizaci ani platebni system. Tlacitka kontaktu zobrazuji pouze ukazkovy kontakt a formular pro vlozeni inzeratu je demonstracni. Pred ostrym provozem je nutny backend, sprava souhlasu s daty, autorizovane importy, moderace a realne overovani.
+
+## Publikovani pres GitHub Pages
+
+V repozitari otevri **Settings > Pages**, nastav **Build and deployment > Source: GitHub Actions**. Potom v zalozce **Actions** spust workflow **Publish site** pres **Run workflow**.
+
+Web pak bude dostupny na `https://xaspi7.github.io/motobazar/`, pokud nasazeni probehne uspesne. Bez zapnuti Pages repozitar obsahuje pouze zdrojovy kod a automaticky sestavovany artefakt, nikoli verejny web.
