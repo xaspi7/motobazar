@@ -5,8 +5,8 @@ const photos = [
 'https://images.unsplash.com/photo-1558980664-10e7170b5f1d?w=1200&q=85',
 'https://images.unsplash.com/photo-1591637333184-19aa84b3e01f?w=1200&q=85',
 'https://images.unsplash.com/photo-1558981403-c5f9899a28bc?w=1200&q=85',
-'https://images.unsplash.com/photo-1449426468159-d96dbf08f19f?w=1200&q=85',
-'https://images.unsplash.com/photo-1517849845537-4d257902454a?w=1200&q=85',
+'https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=1200&q=85',
+'https://images.unsplash.com/photo-1568772585407-9361f9bf3a87?w=1200&q=85',
 'https://images.unsplash.com/photo-1609630875171-b1321377ee65?w=1200&q=85',
 ];
 const entries: Omit<Listing,'image'|'gallery'|'description'|'tags'|'engine'|'sellerType'|'color'>[] = [
@@ -23,7 +23,7 @@ const entries: Omit<Listing,'image'|'gallery'|'description'|'tags'|'engine'|'sel
 {id:11,brand:'Kawasaki',model:'Z900',title:'Kawasaki Z900',year:2020,price:168000,km:18700,power:92,category:'Naháče',city:'Pardubice',seller:'Soukromý prodejce',added:'Před 5 dny'},
 {id:12,brand:'Suzuki',model:'GSX-R 750',title:'Suzuki GSX-R 750',year:2011,price:155000,km:35000,power:110,category:'Sportovní',city:'Jihlava',seller:'Moto Garage',added:'Před 5 dny'},
 ];
-export const listings:Listing[] = entries.map((v,i)=>({...v, sellerType:v.seller==='Soukromý prodejce'?'Soukromý prodejce':'Motobazar',image:photos[i%photos.length],gallery:[photos[i%photos.length],photos[(i+1)%photos.length],photos[(i+2)%photos.length]],description:`${v.title} • ${v.year}. Ukázkový inzerát vytvořený pro předvedení webu. Před nákupem si vždy vyžádejte servisní historii, VIN a domluvte osobní prohlídku stroje.`,tags:i%3===0?['Servisní knížka','Možnost prohlídky']:i%3===1?['Po servisu','ČR původ']:['Garagovaná','Doložené doklady'],engine:i===5?690:i===3?1254:i===6?755:Math.max(600,Math.round(v.power*9)),color:i%3===0?'Modrá':i%3===1?'Černá':'Červená'}));
+export const listings:Listing[] = entries.map((v,i)=>({...v, sellerType:v.seller==='Soukromý prodejce'?'Soukromý prodejce':'Motobazar',image:photos[i%photos.length],gallery:[photos[i%photos.length],photos[(i+1)%photos.length],photos[(i+2)%photos.length]],description:`${v.title} • ${v.year}. Ukázkový inzerát vytvořený pro předvedení webu. Před nákupem si vždy vyžádejte servisní historii, VIN a domluvte osobní prohlídku stroje.`,tags:i%3===0?['Servisní knížka','Možnost prohlídky']:i%3===1?['Po servisu','ČR původ']:['Garážovaná','Doložené doklady'],engine:[599,636,599,1254,689,693,755,765,821,689,948,750][i],color:i%3===0?'Modrá':i%3===1?'Černá':'Červená'}));
 export const money=(n:number)=>new Intl.NumberFormat('cs-CZ').format(n)+' Kč';
 export const number=(n:number)=>new Intl.NumberFormat('cs-CZ').format(n);
 export const categories=['Všechny','Sportovní','Naháče','Cestovní','Enduro','Chopper','Skútry','Supermoto'];
