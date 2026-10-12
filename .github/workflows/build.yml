@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: github-pages-${{ github.ref }}
@@ -16,9 +16,13 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: Check out source
         uses: actions/checkout@v4
+        with:
+          persist-credentials: true
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,11 +33,33 @@ jobs:
         run: npx tsc --noEmit
       - name: Build production site
         run: npm run build
-      - name: Verify deployable output
+      - name: Verify compiled output
         run: |
           test -f dist/index.html
-          grep -q '/motobazar/assets/' dist/index.html
           test -f dist/favicon.svg
+          test -f dist/placeholder-moto.svg
+          grep -q '/motobazar/assets/' dist/index.html
+          if grep -q '/src/main.tsx' dist/index.html; then
+            echo "ERROR: build still references TypeScript source"
+            exit 1
+          fi
+      - name: Keep main branch GitHub Pages compatible
+        if: github.event_name == 'push'
+        run: |
+          cp dist/index.html index.html
+          rm -rf assets
+          cp -R dist/assets ./assets
+          cp dist/favicon.svg favicon.svg
+          cp dist/placeholder-moto.svg placeholder-moto.svg
+          touch .nojekyll
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A index.html assets favicon.svg placeholder-moto.svg .nojekyll
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: sync built site to branch [skip ci]"
+            git push origin HEAD:main
+          fi
       - name: Upload compiled site for GitHub Pages
         if: github.event_name == 'push'
         uses: actions/upload-pages-artifact@v4
