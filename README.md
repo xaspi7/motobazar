@@ -1,31 +1,54 @@
-# MotoBazar
+# MotoBazar — design prototype 02
 
-Interaktivni frontend prvni verze ceskeho motobazaru. React + TypeScript + Vite, bez backendu. Demonstracni inzeraty, ceny, prodejci a overeni jsou fiktivni a slouzi pouze pro test UX.
+Minimalistický český motobazar a ukázková administrace pro samostatné prodejce. Vizuální směr: industriální editorial, ostrá geometrie, výrazná typografie a vlastní vyhledávací komponenty místo standardních systémových `<select>` v katalogu.
 
-## Spusteni
+**Živé demo:** https://xaspi7.github.io/motobazar/
+
+## Lokální spuštění
 
 ```bash
 npm install
 npm run dev
 ```
 
-Otevri URL vypsanou Vite. Produkcni build: `npm run build`.
+Produkční kontrola:
 
-## Co funguje
+```bash
+npx tsc --noEmit
+npm run build
+```
 
-- Katalog, vyhledavani, filtrovani, razeni a rychle kategorie
-- Detail inzeratu vcetne galerie a prehledu dostupnych udaju
-- Oblibene inzeraty ulozene v localStorage
-- Srovnavac az tri motorek
-- Mobilni menu, responzivni UI, modal pro hledani a vlozeni inzeratu (demo)
-- Navigace funguje bez routeru a zachovava filtrovani v ramci otevrene relace
+## Cesty
 
-## Omezeni
+Web je na GitHub Pages nasazený jako klientská aplikace s hash navigací:
 
-Demo neni napojeno na realne inzercni portaly, statni registr, autentizaci ani platebni system. Tlacitka kontaktu zobrazuji pouze ukazkovy kontakt a formular pro vlozeni inzeratu je demonstracni. Pred ostrym provozem je nutny backend, sprava souhlasu s daty, autorizovane importy, moderace a realne overovani.
+- `#motorky` — katalog, filtry, našeptávání, řazení
+- `#motorka/m-101` — detail nabídky
+- `#bazary` — seznam ukázkových bazarů
+- `#bazar/ride-lab` — vlastní profil bazaru
+- `#sprava` — ukázková správa všech bazarů
+- `#oblibene` — uložené motorky
 
-## Publikovani pres GitHub Pages
+## Demo správy bazarů
 
-V repozitari otevri **Settings > Pages**, nastav **Build and deployment > Source: GitHub Actions**. Potom v zalozce **Actions** spust workflow **Publish site** pres **Run workflow**.
+1. V hlavičce vyber **Pro prodejce**.
+2. V levém panelu přepni ukázkový bazar. Každý má oddělené inzeráty.
+3. Vytvoř inzerát, změň cenu, uprav stav na **Aktivní**, **Koncept** nebo **Prodaný**, případně ho smaž.
+4. V sekci **Profil bazaru** lze změnit jméno, město, motto, popis a barevný akcent.
+5. Všechny změny se okamžitě projeví na veřejném profilu příslušného bazaru **ve stejném prohlížeči**.
+6. Reset ukázkových dat je ve footeru.
 
-Web pak bude dostupny na `https://xaspi7.github.io/motobazar/`, pokud nasazeni probehne uspesne. Bez zapnuti Pages repozitar obsahuje pouze zdrojovy kod a automaticky sestavovany artefakt, nikoli verejny web.
+## DŮLEŽITÉ: není to zabezpečená administrace
+
+- **Žádné reálné účty a žádné ověření přístupu.** Každý návštěvník může přepínat ukázkové bazary. Nikdy nevkládat reálné údaje.
+- Inzeráty a profily se ukládají výhradně do `localStorage` konkrétního prohlížeče. Neexistuje sdílená databáze, synchronizace, backend ani API.
+- Všechny předpřipravené motorky a prodejci jsou **fiktivní**; fotografie jsou **ilustrační**, nikoli snímky daných motorek. Žádné údaje nejsou ověřené.
+- Funkce kontaktování kupujícího je pouze informativní. Není připojené posílání e-mailů, nahrávání fotografií ani rezervace.
+- Neprobíhá scraping cizích bazarů ani dotazování státního registru.
+- Před ostrým nasazením nutné připojit autentizaci, role/opránění jednotlivých prodejců, serverovou databázi, upload obrázků, moderaci inzerátů a ochranu osobních údajů.
+
+## GitHub Pages
+
+Workflow `.github/workflows/build.yml` po každém pushi do `main` spustí TypeScript kontrolu, Vite produkční build a publikuje složku `dist` přes GitHub Actions.
+
+V GitHub repozitáři musí být v **Settings → Pages → Build and deployment → Source** zvoleno **GitHub Actions**. Web běží pod cestou `/motobazar/`.

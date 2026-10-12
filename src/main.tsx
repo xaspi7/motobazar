@@ -1,46 +1,270 @@
-import React,{useEffect,useMemo,useState} from 'react';
-import{createRoot}from'react-dom/client';
-import{Search,Heart,Plus,Menu,X,SlidersHorizontal,MapPin,Gauge,CalendarDays,ChevronLeft,ChevronRight,ArrowUpRight,ArrowRight,Bike,Check,GitCompareArrows,ShieldCheck,Clock3,Info,Phone,Mail,Share2,LayoutGrid,RotateCcw,Bell,CheckCircle2,ArrowLeft,Building2}from'lucide-react';
-import{listings,brands,categories,money,number,type Listing}from'./data';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createRoot } from 'react-dom/client';
+import {
+  ArrowDown, ArrowDownRight, ArrowLeft, ArrowRight, ArrowUpRight,
+  Check, ChevronLeft, ChevronRight, Heart, MapPin, Menu, MoveUpRight,
+  Search, ShieldAlert, SlidersHorizontal, X,
+} from 'lucide-react';
+import {
+  categories, fallbackImage, formatUpdated, getDealer, money, number, seededDealers, seededListings,
+  type Dealer, type Listing,
+} from './data';
+import { readDealers, readFavorites, readListings, resetDemo, saveDealers, saveFavorites, saveListings } from './storage';
+import { initialFilters, ListingCard, SearchDock, SectionHeader, SelectMenu, type Filters } from './components';
+import { Dashboard } from './dashboard';
 import './style.css';
-type View='home'|'catalog'|'detail'|'favorites'|'compare'|'dealers';
-function routeFromHash():{view:View,id?:number}{
- const hash=window.location.hash;
- if(hash.startsWith('#motorka-')){const id=Number(hash.slice(9));if(listings.some(x=>x.id===id))return{view:'detail',id};}
- const routes:Record<string,View>={'#motorky':'catalog','#oblibene':'favorites','#porovnat':'compare','#pro-prodejce':'dealers'};
- return{view:routes[hash]||'home'};
+
+type Route = { page: 'home' | 'catalog' | 'dealers' | 'dealer' | 'detail' | 'favorites' | 'dashboard'; id?: string };
+type Sort = 'newest' | 'cheapest' | 'expensive' | 'least-km';
+
+function parseRoute(): Route {
+  const raw = decodeURIComponent(window.location.hash.replace(/^#\/?/, ''));
+  if (raw === 'motorky') return { page: 'catalog' };
+  if (raw === 'bazary') return { page: 'dealers' };
+  if (raw === 'oblibene') return { page: 'favorites' };
+  if (raw === 'sprava') return { page: 'dashboard' };
+  if (raw.startsWith('bazar/')) return { page: 'dealer', id: raw.slice(6) };
+  if (raw.startsWith('motorka/')) return { page: 'detail', id: raw.slice(8) };
+  return { page: 'home' };
 }
-const hashForView=(view:View,id?:number)=>({home:'',catalog:'#motorky',detail:'#motorka-'+id,favorites:'#oblibene',compare:'#porovnat',dealers:'#pro-prodejce'}[view]);
-const demoDisclaimer='Ukázkový inzerát · fotografie jsou ilustrační, údaje nejsou ověřené';
-function App(){
- const [view,setView]=useState<View>(()=>routeFromHash().view),[selected,setSelected]=useState<Listing>(()=>listings.find(x=>x.id===routeFromHash().id)||listings[0]);
- const [brand,setBrand]=useState('Všechny značky'),[model,setModel]=useState(''),[minPrice,setMinPrice]=useState(''),[maxPrice,setMaxPrice]=useState(''),[maxKm,setMaxKm]=useState(''),[minYear,setMinYear]=useState(''),[category,setCategory]=useState('Všechny'),[query,setQuery]=useState(''),[sort,setSort]=useState('newest'),[favorites,setFavorites]=useState<number[]>(()=>{try{return JSON.parse(localStorage.getItem('moto-favorites')||'[]')}catch{return[]}}),[compare,setCompare]=useState<number[]>([]),[gallery,setGallery]=useState(0),[filtersOpen,setFiltersOpen]=useState(false),[mobileMenu,setMobileMenu]=useState(false),[dialog,setDialog]=useState<'contact'|'sell'|'alert'|'help'|null>(null),[toast,setToast]=useState('');
- useEffect(()=>{localStorage.setItem('moto-favorites',JSON.stringify(favorites))},[favorites]);
- useEffect(()=>{window.scrollTo({top:0,behavior:'instant'});setMobileMenu(false)},[view]);
- useEffect(()=>{const onHistory=()=>{const route=routeFromHash();setView(route.view);if(route.id)setSelected(listings.find(x=>x.id===route.id)||listings[0]);};window.addEventListener('popstate',onHistory);return()=>window.removeEventListener('popstate',onHistory)},[]);
- useEffect(()=>{const onKey=(event:KeyboardEvent)=>{if(event.key==='Escape'){setDialog(null);setMobileMenu(false)}};window.addEventListener('keydown',onKey);return()=>window.removeEventListener('keydown',onKey)},[]);
- useEffect(()=>{if(!toast)return;const t=setTimeout(()=>setToast(''),3000);return()=>clearTimeout(t)},[toast]);
- const filtered=useMemo(()=>listings.filter(x=>(brand==='Všechny značky'||x.brand===brand)&&(category==='Všechny'||x.category===category)&&(!model||x.model.toLocaleLowerCase('cs').includes(model.toLocaleLowerCase('cs')))&&(!query||[x.title,x.brand,x.model,x.city].join(' ').toLocaleLowerCase('cs').includes(query.toLocaleLowerCase('cs')))&&(!minPrice||x.price>=+minPrice)&&(!maxPrice||x.price<=+maxPrice)&&(!maxKm||x.km<=+maxKm)&&(!minYear||x.year>=+minYear)).sort((a,b)=>sort==='cheapest'?a.price-b.price:sort==='expensive'?b.price-a.price:sort==='year'?b.year-a.year:sort==='km'?a.km-b.km:a.id-b.id),[brand,category,model,query,minPrice,maxPrice,maxKm,minYear,sort]);
- const go=(v:View,id?:number)=>{setView(v);window.history.pushState({},'',window.location.pathname+window.location.search+hashForView(v,id??selected.id))};
- const openDetail=(x:Listing)=>{setSelected(x);setGallery(0);go('detail',x.id);window.scrollTo({top:0,behavior:'instant'})};
- const toggleFav=(id:number)=>setFavorites(prev=>prev.includes(id)?prev.filter(x=>x!==id):[...prev,id]);
- const toggleCompare=(id:number)=>setCompare(prev=>prev.includes(id)?prev.filter(x=>x!==id):prev.length>=3?(setToast('Lze porovnat nejvýše 3 motorky'),prev):[...prev,id]);
- const reset=()=>{setBrand('Všechny značky');setModel('');setMinPrice('');setMaxPrice('');setMaxKm('');setMinYear('');setCategory('Všechny');setQuery('')};
- const handleSearch=()=>{go('catalog');setFiltersOpen(false)};
- const listingCards=(items:Listing[])=><div className="listing-grid">{items.map(x=><article className="listing-card" key={x.id}><div className="card-photo" role="button" tabIndex={0} aria-label={`Otevřít inzerát ${x.title}`} onClick={()=>openDetail(x)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(x)}}}><img loading="lazy" src={x.image} onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src='./placeholder-moto.svg'}} alt="Ilustrační fotografie motocyklu"/><span className="image-note">Ilustrační foto</span>{x.id<=2&&<span className="new-tag">Novinka</span>}</div><button className={'favorite-btn '+(favorites.includes(x.id)?'on':'')} aria-label="Přidat do oblíbených" onClick={()=>toggleFav(x.id)}><Heart size={19} fill={favorites.includes(x.id)?'currentColor':'none'}/></button><div className="card-content"><div className="card-main" role="button" tabIndex={0} aria-label={`Detail: ${x.title}`} onClick={()=>openDetail(x)} onKeyDown={e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openDetail(x)}}}><h3>{x.title}</h3><span className="spec-line">{x.year}<i/> {number(x.km)} km <i/> {x.power} kW</span><div className="card-footer"><span className="location"><MapPin size={13}/>{x.city}</span><strong>{money(x.price)}</strong></div></div><div className="card-bottom"><span>{x.sellerType}</span><button onClick={()=>toggleCompare(x.id)} className={compare.includes(x.id)?'active-compare':''}><GitCompareArrows size={14}/>{compare.includes(x.id)?'Přidáno':'Porovnat'}</button></div></div></article>)}</div>;
- const searchBox=<div className="search-panel"><div className="search-title"><Search size={19}/><span>Najdi svoji další motorku</span></div><div className="search-controls"><label>Značka<select value={brand} onChange={e=>{setBrand(e.target.value);setModel('')}}>{brands.map(b=><option key={b}>{b}</option>)}</select></label><label>Model<input value={model} placeholder="Např. GSX-R 600" onChange={e=>setModel(e.target.value)}/></label><label>Cena od<input inputMode="numeric" type="number" min="0" value={minPrice} placeholder="Kč" onChange={e=>setMinPrice(e.target.value)}/></label><label>Cena do<input inputMode="numeric" type="number" min="0" value={maxPrice} placeholder="Kč" onChange={e=>setMaxPrice(e.target.value)}/></label><button className="primary search-submit" onClick={handleSearch}><Search size={18}/> Hledat</button></div><button className="search-more" onClick={()=>{go('catalog');setFiltersOpen(true)}}>Rozšířené vyhledávání <ArrowUpRight size={14}/></button></div>;
- const filterFields=<><div className="filter-group"><h4>Kategorie</h4><div className="filter-list">{categories.map(c=><label className="radio-row" key={c}><input type="radio" checked={category===c} onChange={()=>setCategory(c)}/><span>{c}</span></label>)}</div></div><div className="filter-group"><h4>Značka</h4><select value={brand} onChange={e=>setBrand(e.target.value)}>{brands.map(b=><option key={b}>{b}</option>)}</select></div><div className="filter-group"><h4>Cena (Kč)</h4><div className="filter-double"><input type="number" placeholder="Od" value={minPrice} onChange={e=>setMinPrice(e.target.value)}/><input type="number" placeholder="Do" value={maxPrice} onChange={e=>setMaxPrice(e.target.value)}/></div></div><div className="filter-group"><h4>Rok výroby od</h4><input type="number" placeholder="Např. 2015" value={minYear} onChange={e=>setMinYear(e.target.value)}/></div><div className="filter-group"><h4>Maximální nájezd</h4><input type="number" placeholder="Např. 30 000 km" value={maxKm} onChange={e=>setMaxKm(e.target.value)}/></div><button className="reset-btn" onClick={reset}><RotateCcw size={14}/> Vymazat filtry</button></>;
- const catalog=(heading='Prohlédni si nabídku')=><section className="catalog-section content-width" id="nabidky"><div className="section-head"><div><span className="eyebrow">NAJDI SVŮJ STROJ</span><h2>{heading}<span className="subtle-count"> ({filtered.length})</span></h2></div><div className="catalog-actions"><button className="outline-mobile-filter" onClick={()=>setFiltersOpen(!filtersOpen)}><SlidersHorizontal size={17}/> Filtry</button><label className="sort-select">Řadit podle <select value={sort} onChange={e=>setSort(e.target.value)}><option value="newest">Nejnovější</option><option value="cheapest">Nejlevnější</option><option value="expensive">Nejdražší</option><option value="year">Nejnovější rok</option><option value="km">Nejnižší nájezd</option></select></label></div></div><div className="catalog-layout"><aside className={'filters '+(filtersOpen?'expanded':'')}><div className="filters-head"><strong>Filtrovat nabídky</strong><SlidersHorizontal size={17}/></div>{filterFields}</aside><div className="catalog-right"><div className="query-row"><Search size={17}/><input placeholder="Hledat podle modelu, značky nebo města..." value={query} onChange={e=>setQuery(e.target.value)}/>{query&&<button onClick={()=>setQuery('')}><X size={16}/></button>}</div>{filtered.length?listingCards(filtered):<div className="empty-state"><Search size={36}/><h3>Tady je zatím prázdno</h3><p>Zkus změnit značku, cenu nebo další filtry.</p><button className="primary" onClick={reset}>Vymazat filtry</button></div>}<div className="demo-strip"><Info size={17}/><span>Zatím prohlížíš demonstrační katalog. Inzeráty a jejich údaje jsou ukázkové, fotografie ilustrační.</span></div></div></div></section>;
- return <><header className="site-header"><div className="nav content-width"><button className="logo" onClick={()=>go('home')} aria-label="MotoBazar úvod"><span className="logo-mark">M<span/></span><span>MOTO<span>BAZAR</span><b>.</b></span></button><nav className={'desktop-nav '+(mobileMenu?'open':'')}><button className={view==='catalog'?'nav-active':''} onClick={()=>go('catalog')}>Motorky</button><button className={view==='dealers'?'nav-active':''} onClick={()=>go('dealers')}>Prodejci</button><button onClick={()=>setDialog('help')}>Jak to funguje</button></nav><div className="nav-right"><button className="nav-icon" onClick={()=>go('favorites')} title="Oblíbené"><Heart size={20}/>{favorites.length>0&&<sup>{favorites.length}</sup>}</button><button className="nav-label" onClick={()=>go('favorites')}>Oblíbené</button><button className="primary sell-button" onClick={()=>setDialog('sell')}><Plus size={19}/>Přidat inzerát</button><button className="mobile-menu-btn" aria-label="Menu" onClick={()=>setMobileMenu(!mobileMenu)}>{mobileMenu?<X/>:<Menu/>}</button></div></div></header>
- {view==='home'&&<><section className="hero"><div className="hero-photo"/><div className="hero-glow"/><div className="hero-inner content-width"><div className="hero-copy"><div className="hero-kicker"><span className="status-dot"/> NOVÝ POHLED NA MOTORKY</div><h1>Tvůj další příběh<br/>začíná <em>na dvou kolech.</em></h1><p>Najdi motorku, která ti sedne. Přehledně, jednoduše a bez zbytečného hledání.</p></div>{searchBox}<div className="hero-bottom"><span><CheckCircle2 size={15}/> Chytřejší výběr</span><span><GitCompareArrows size={15}/> Jednoduché porovnání</span><span><Heart size={15}/> Oblíbené na jednom místě</span></div></div></section><section className="categories-section content-width"><div className="category-heading"><span className="eyebrow">AŤ UŽ JEZDÍŠ JAKKOLIV</span><h2>Co tě táhne na silnici?</h2></div><div className="category-grid">{[['Sportovní','01'],['Naháče','02'],['Cestovní','03'],['Enduro','04'],['Chopper','05'],['Skútry','06'],['Supermoto','07']].map(([c,emoji])=><button key={c} className={'category-card '+(category===c?'picked':'')} onClick={()=>{setCategory(c);go('catalog')}}><span>{emoji}</span><strong>{c}</strong><ArrowUpRight size={15}/></button>)}</div></section><section className="value-strip"><div className="content-width values"><div><span className="value-icon"><Search size={23}/></span><div><b>Najdi přesně to svoje</b><p>Výběr bez zbytečného klikání</p></div></div><div><span className="value-icon"><GitCompareArrows size={23}/></span><div><b>Srovnej konkrétní kusy</b><p>Rozhoduj se s přehledem</p></div></div><div><span className="value-icon"><ShieldCheck size={23}/></span><div><b>Prověřuj s rozumem</b><p>Jasně oddělená fakta a tvrzení</p></div></div></div></section>{catalog('Motorky, které stojí za pohled')}<section className="dealer-banner content-width"><div><span className="eyebrow">PRO MOTOBAZARY A PRODEJCE</span><h2>Vaše motorky. <em>Vaše značka.</em><br/>Jeden jednoduchý systém.</h2><p>Připravujeme moderní prezentace pro prodejce, jednoduchou správu nabídky a další místo, kde vás zákazníci najdou.</p><button className="light-btn" onClick={()=>go('dealers')}>Zjistit více <ArrowRight size={18}/></button></div><div className="dealer-graphic"><Building2 size={85} strokeWidth={1}/><span>YOUR MOTO SHOP <ArrowUpRight size={16}/></span></div></section></>}
- {view==='catalog'&&<><section className="sub-hero content-width"><div><span className="eyebrow">MOTOBAZAR / NABÍDKA</span><h1>Najdi motorku, <em>která ti sedne.</em></h1><p>Hledej podle toho, na čem ti opravdu záleží.</p></div><Bike size={110} strokeWidth={1}/></section>{catalog('Všechny motorky')}</>}
- {view==='detail'&&<main className="detail content-width"><button className="back-link" onClick={()=>go('catalog')}><ArrowLeft size={18}/> Zpět na nabídky</button><div className="detail-top"><div><div className="detail-kicker">{selected.category.toUpperCase()} <span>·</span> {selected.sellerType.toUpperCase()}</div><h1>{selected.title}</h1><div className="detail-inline-specs"><span><CalendarDays size={16}/>{selected.year}</span><span><Gauge size={16}/>{number(selected.km)} km</span><span><Bike size={16}/>{selected.power} kW</span><span><MapPin size={16}/>{selected.city}</span></div></div><div className="detail-price"><strong>{money(selected.price)}</strong><small>Uvedená cena prodejce · demo</small></div></div><div className="detail-main-grid"><div><div className="detail-image"><img src={selected.gallery[gallery]} onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src='./placeholder-moto.svg'}} alt="Ilustrační fotografie motocyklu"/><span className="photo-label">ILUSTRAČNÍ FOTO</span><button className="gallery-prev" aria-label="Předchozí fotografie" onClick={()=>setGallery((gallery+selected.gallery.length-1)%selected.gallery.length)}><ChevronLeft/></button><button className="gallery-next" aria-label="Další fotografie" onClick={()=>setGallery((gallery+1)%selected.gallery.length)}><ChevronRight/></button><span className="photo-counter">{gallery+1} / {selected.gallery.length}</span></div><div className="thumbnails">{selected.gallery.map((url,i)=><button key={i} className={gallery===i?'selected-thumb':''} onClick={()=>setGallery(i)}><img src={url} onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src='./placeholder-moto.svg'}} alt={`Fotografie ${i+1}`}/></button>)}</div><div className="detail-panel"><div className="panel-heading"><h2>O této motorce</h2><span className="demo-pill">UKÁZKOVÝ INZERÁT</span></div><p>{selected.description}</p><div className="feature-tags">{selected.tags.map(t=><span key={t}><Check size={15}/>{t} (tvrzení prodejce)</span>)}</div></div><div className="detail-panel"><h2>Technické údaje</h2><div className="spec-table">{[['Značka',selected.brand],['Model',selected.model],['Rok výroby',String(selected.year)],['Najeto',number(selected.km)+' km'],['Výkon',selected.power+' kW'],['Zdvihový objem',selected.engine+' cm³'],['Kategorie',selected.category],['Lokalita',selected.city]].map(([k,v])=><div key={k}><span>{k}</span><b>{v}</b></div>)}</div></div><div className="detail-panel verification"><div className="panel-heading"><h2>Historie a prověření</h2><span className="demo-pill">ZATÍM NEDOSTUPNÉ</span></div><div className="verify-box"><Info size={22}/><div><strong>Údaje o historii nejsou ověřeny</strong><p>Toto je demonstrační verze. Neprovádíme zatím kontrolu VIN, kilometrů ani servisní historie. Zobrazené parametry jsou ukázkové.</p></div></div><div className="verify-cards"><div><ShieldCheck size={23}/><strong>VIN a registr</strong><p>Napojení připravujeme</p></div><div><Gauge size={23}/><strong>Historie kilometrů</strong><p>Napojení připravujeme</p></div><div><Clock3 size={23}/><strong>Historie ceny</strong><p>Napojení připravujeme</p></div></div></div></div><aside className="seller-column"><div className="seller-panel"><span className="seller-label">PRODEJCE</span><div className="seller-avatar">{selected.sellerType==='Motobazar'?<Building2 size={29}/>:<Bike size={29}/>}</div><h3>{selected.seller}</h3><p><MapPin size={15}/>{selected.city}</p><div className="seller-separator"/><button className="primary wide" onClick={()=>setDialog('contact')}><Phone size={18}/> Zobrazit kontakt</button><button className="outlined wide" onClick={()=>setDialog('contact')}><Mail size={18}/> Napsat prodejci</button><p className="demo-seller-note">Ukázkový kontakt, prodejce není skutečný.</p></div><div className="quick-actions"><button onClick={()=>toggleFav(selected.id)}><Heart fill={favorites.includes(selected.id)?'currentColor':'none'} size={19}/>{favorites.includes(selected.id)?'Uloženo':'Uložit'}</button><button onClick={()=>toggleCompare(selected.id)}><GitCompareArrows size={19}/>{compare.includes(selected.id)?'Ve srovnání':'Porovnat'}</button><button onClick={()=>{if(!navigator.clipboard?.writeText){setToast('Kopírování není dostupné');return;}navigator.clipboard.writeText(window.location.href).then(()=>setToast('Odkaz zkopírován')).catch(()=>setToast('Odkaz se nepodařilo zkopírovat'))}}><Share2 size={19}/>Sdílet</button></div><div className="buyer-tip"><Info size={20}/><div><b>Tip před koupí</b><p>Před cestou si vyžádej VIN, doklady a aktuální fotografie motorky.</p></div></div></aside></div><section className="related"><div className="section-head"><h2>Mohlo by tě zajímat</h2><button className="text-link" onClick={()=>go('catalog')}>Všechny nabídky <ArrowRight size={16}/></button></div>{listingCards(listings.filter(x=>x.id!==selected.id).slice(0,3))}</section></main>}
- {view==='favorites'&&<main className="simple-page content-width"><div className="page-intro"><span className="eyebrow">TVŮJ VÝBĚR</span><h1>Oblíbené <em>motorky.</em></h1><p>Všechny stroje, které ti padly do oka, přehledně na jednom místě.</p></div>{favorites.length?listingCards(listings.filter(x=>favorites.includes(x.id))):<div className="empty-state"><Heart size={39}/><h3>Zatím tu nic nemáš</h3><p>Ulož si motorky kliknutím na srdíčko u inzerátu.</p><button className="primary" onClick={()=>go('catalog')}>Procházet motorky</button></div>}</main>}
- {view==='compare'&&<main className="simple-page content-width"><div className="page-intro"><span className="eyebrow">ROZHODUJ SE CHYTŘE</span><h1>Porovnání <em>motorek.</em></h1><p>Vyber až tři motorky a porovnej jejich parametry vedle sebe.</p></div>{compare.length?<div className="compare-wrap"><table className="compare-table"><tbody><tr><th>Motorka</th>{compare.map(id=>{const x=listings.find(i=>i.id===id)!;return <td key={id}><img src={x.image} alt="Ilustrační foto motocyklu" onError={e=>{e.currentTarget.onerror=null;e.currentTarget.src='./placeholder-moto.svg'}}/><b>{x.title}</b><button onClick={()=>toggleCompare(id)}><X size={14}/> Odebrat</button></td>})}</tr>{[['Cena',(x:Listing)=>money(x.price)],['Rok výroby',(x:Listing)=>x.year],['Najeto',(x:Listing)=>number(x.km)+' km'],['Výkon',(x:Listing)=>x.power+' kW'],['Lokalita',(x:Listing)=>x.city],['Prodejce',(x:Listing)=>x.seller]].map(([key,fn])=><tr key={String(key)}><th>{String(key)}</th>{compare.map(id=><td key={id}>{(fn as (x:Listing)=>string|number)(listings.find(x=>x.id===id)!)}</td>)}</tr>)}</tbody></table></div>:<div className="empty-state"><GitCompareArrows size={39}/><h3>Nic k porovnání</h3><p>U inzerátů klikni na „Porovnat“ a vyber až tři motorky.</p><button className="primary" onClick={()=>go('catalog')}>Vybrat motorky</button></div>}</main>}
- {view==='dealers'&&<main className="dealer-page"><div className="dealer-hero content-width"><span className="eyebrow">PRO PRODEJCE</span><h1>Tvůj bazar si zaslouží<br/><em>lepší místo na webu.</em></h1><p>Moderní prezentace motorek a jednoduchá správa nabídky. Připravujeme řešení pro malé i větší prodejce.</p><button className="primary" onClick={()=>setDialog('help')}>Jak to plánujeme <ArrowRight size={18}/></button></div><div className="dealer-benefits content-width">{[[<Building2/>, 'Web pod tvojí značkou','Vlastní prezentace bez nákladného vývoje.'],[<LayoutGrid/>, 'Jednoduchá správa','Jedno místo pro všechny motorky.'],[<Search/>, 'Další cesta k zákazníkům','Nabídky i ve společném vyhledávání.']].map(([ic,h,p],i)=><div key={i}><span>{ic}</span><h3>{h}</h3><p>{p}</p></div>)}</div><div className="dealer-coming content-width"><Info size={20}/><span>Služba pro prodejce je v přípravě. Tato stránka zatím slouží jako ukázka konceptu.</span></div></main>}
- <footer className="footer"><div className="content-width footer-inner"><div><button className="logo" onClick={()=>go('home')}><span className="logo-mark">M<span/></span><span>MOTO<span>BAZAR</span><b>.</b></span></button><p>Méně hledání. Více ježdění.</p></div><div><b>Procházet</b><button onClick={()=>go('catalog')}>Všechny motorky</button><button onClick={()=>go('favorites')}>Oblíbené</button><button onClick={()=>go('dealers')}>Pro prodejce</button></div><div><b>Informace</b><button onClick={()=>setDialog('help')}>O projektu</button><button onClick={()=>setDialog('help')}>Jak to funguje</button></div></div><div className="content-width footer-base"><span>© 2026 MotoBazar · Koncept / demo</span><span>Všechny nabídky a kontakty jsou fiktivní.</span></div></footer>
- {compare.length>0&&view!=='compare'&&<div className="compare-dock"><div><GitCompareArrows size={19}/><b>Porovnání</b><span>{compare.length}/3 vybráno</span></div><button className="dock-go" onClick={()=>go('compare')}>Porovnat <ArrowRight size={16}/></button><button className="dock-close" title="Vymazat" onClick={()=>setCompare([])}><X size={16}/></button></div>}
- {dialog&&<div className="modal-backdrop" onClick={()=>setDialog(null)}><div className="modal" onClick={e=>e.stopPropagation()}><button className="modal-x" onClick={()=>setDialog(null)}><X size={22}/></button>{dialog==='contact'?<><div className="modal-icon"><Phone/></div><h2>Kontakt na prodejce</h2><p>{demoDisclaimer}. V ostré verzi zde bude ověřený kontakt na skutečného prodávajícího.</p><button className="primary wide" onClick={()=>setDialog(null)}>Rozumím</button></>:dialog==='sell'?<><div className="modal-icon"><Plus/></div><h2>Chceš prodat motorku?</h2><p>Vkládání inzerátů a účty prodejců teprve připravujeme. Tohle je první funkční ukázka vzhledu a vyhledávání.</p><button className="primary wide" onClick={()=>setDialog(null)}>Jasně, rozumím</button></>:dialog==='alert'?<><div className="modal-icon"><Bell/></div><h2>Hlídání nabídek</h2><p>Upozornění na nové motorky přibudou po spuštění účtů a databáze.</p><button className="primary wide" onClick={()=>setDialog(null)}>Zavřít</button></>:<><div className="modal-icon"><Info/></div><h2>MotoBazar je právě ve vývoji</h2><p>Prohlížíš interaktivní prototyp. Můžeš zkoušet vyhledávání, filtry, detail motorky, oblíbené a porovnání. Inzeráty jsou fiktivní a žádné prověření motorky nyní neprobíhá.</p><button className="primary wide" onClick={()=>setDialog(null)}>Pokračovat v prohlížení</button></>}</div></div>}
- {toast&&<div className="toast"><CheckCircle2 size={17}/>{toast}</div>}</>;
+
+const routeToHash = (page: Route['page'], id?: string) => {
+  const root: Record<Route['page'], string> = {
+    home: '', catalog: 'motorky', dealers: 'bazary', dealer: `bazar/${id ?? ''}`,
+    detail: `motorka/${id ?? ''}`, favorites: 'oblibene', dashboard: 'sprava',
+  };
+  return root[page];
+};
+
+function App() {
+  const [route, setRoute] = useState<Route>(parseRoute);
+  const [listings, setListings] = useState<Listing[]>(readListings);
+  const [dealers, setDealers] = useState<Dealer[]>(readDealers);
+  const [favorites, setFavorites] = useState<string[]>(readFavorites);
+  const [filters, setFilters] = useState<Filters>(initialFilters);
+  const [sort, setSort] = useState<Sort>('newest');
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dealerId, setDealerId] = useState(() => window.localStorage.getItem('motobazar:demo-selected-dealer') || 'ride-lab');
+  const [imageIndex, setImageIndex] = useState(0);
+  const [toast, setToast] = useState('');
+  const toastTimer = useRef<number | null>(null);
+
+  useEffect(() => {
+    const onChange = () => { setRoute(parseRoute()); setMobileMenuOpen(false); setImageIndex(0); window.scrollTo({ top: 0, behavior: 'auto' }); };
+    window.addEventListener('hashchange', onChange);
+    return () => window.removeEventListener('hashchange', onChange);
+  }, []);
+  useEffect(() => { try { saveListings(listings); } catch { /* Storage can be disabled. */ } }, [listings]);
+  useEffect(() => { try { saveDealers(dealers); } catch { /* Storage can be disabled. */ } }, [dealers]);
+  useEffect(() => { try { saveFavorites(favorites); } catch { /* Storage can be disabled. */ } }, [favorites]);
+  useEffect(() => { try { window.localStorage.setItem('motobazar:demo-selected-dealer', dealerId); } catch { /* Storage can be disabled. */ } }, [dealerId]);
+  useEffect(() => () => { if (toastTimer.current !== null) window.clearTimeout(toastTimer.current); }, []);
+
+  const go = (page: Route['page'], id?: string) => {
+    const nextHash = routeToHash(page, id);
+    if (window.location.hash.replace(/^#/, '') !== nextHash) window.location.hash = nextHash ? `#${nextHash}` : '#';
+    setRoute({ page, id });
+    setMobileMenuOpen(false);
+    setImageIndex(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const notify = (message: string) => {
+    setToast(message);
+    if (toastTimer.current !== null) window.clearTimeout(toastTimer.current);
+    toastTimer.current = window.setTimeout(() => setToast(''), 3500);
+  };
+
+  const activeListings = useMemo(() => listings.filter((item) => item.status === 'active'), [listings]);
+  const visibleListings = useMemo(() => {
+    const query = filters.query.trim().toLocaleLowerCase('cs-CZ');
+    const available = activeListings.filter((item) => {
+      if (filters.brand && item.brand !== filters.brand) return false;
+      if (filters.category && item.category !== filters.category) return false;
+      if (filters.price && item.price > Number(filters.price)) return false;
+      if (filters.year && item.year < Number(filters.year)) return false;
+      if (filters.km && item.km > Number(filters.km)) return false;
+      if (!query) return true;
+      const dealer = getDealer(dealers, item.dealerId);
+      return [item.title, item.brand, item.model, item.city, dealer?.name ?? ''].some((field) => field.toLocaleLowerCase('cs-CZ').includes(query));
+    });
+    if (sort === 'cheapest') return available.sort((a, b) => a.price - b.price);
+    if (sort === 'expensive') return available.sort((a, b) => b.price - a.price);
+    if (sort === 'least-km') return available.sort((a, b) => a.km - b.km);
+    return available.sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+  }, [activeListings, dealers, filters, sort]);
+
+  const favoriteListings = activeListings.filter((item) => favorites.includes(item.id));
+  const openedListing = activeListings.find((item) => item.id === route.id);
+  const openedDealer = dealers.find((dealer) => dealer.slug === route.id);
+  const chosenDealer = dealers.find((dealer) => dealer.id === dealerId) ?? dealers[0];
+
+  const toggleFavorite = (id: string) => {
+    setFavorites((prev) => prev.includes(id) ? prev.filter((entry) => entry !== id) : [...prev, id]);
+  };
+
+  const setQuickFilter = (category: string) => { setFilters({ ...initialFilters, category: category === 'Všechny' ? '' : category }); go('catalog'); };
+  const onSaveListing = (value: Listing) => {
+    setListings((prev) => prev.some((item) => item.id === value.id) ? prev.map((item) => item.id === value.id ? value : item) : [value, ...prev]);
+  };
+  const onSaveDealer = (value: Dealer) => setDealers((prev) => prev.map((dealer) => dealer.id === value.id ? value : dealer));
+
+  const Header = () => (
+    <header className="site-header">
+      <div className="header-inner">
+        <button className="site-wordmark" type="button" onClick={() => go('home')} aria-label="MotoBazar – domů">
+          <span className="logo-glyph" aria-hidden="true"><i /><i /><i /></span>
+          <span className="logo-type">MOTO<span>BAZAR</span><sup>®</sup></span>
+        </button>
+        <nav className={`primary-nav ${mobileMenuOpen ? 'nav-open' : ''}`} aria-label="Hlavní navigace">
+          <button className={route.page === 'catalog' ? 'active' : ''} onClick={() => go('catalog')}>MOTORKY</button>
+          <button className={route.page === 'dealers' || route.page === 'dealer' ? 'active' : ''} onClick={() => go('dealers')}>BAZARY</button>
+          <button className={route.page === 'favorites' ? 'active' : ''} onClick={() => go('favorites')}>ULOŽENÉ <span className="saved-count">{favorites.length}</span></button>
+        </nav>
+        <div className="header-actions">
+          <button type="button" className="admin-entry" onClick={() => go('dashboard')}>PRO PRODEJCE <ArrowUpRight size={16} /></button>
+          <button type="button" className="mobile-menu-button" aria-label={mobileMenuOpen ? 'Zavřít menu' : 'Otevřít menu'} aria-expanded={mobileMenuOpen} onClick={() => setMobileMenuOpen((prev) => !prev)}>{mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}</button>
+        </div>
+      </div>
+    </header>
+  );
+
+  const renderCards = (items: Listing[]) => (
+    <div className="listing-grid">
+      {items.map((item) => (
+        <ListingCard key={item.id} item={item} dealer={getDealer(dealers, item.dealerId)} favorite={favorites.includes(item.id)} onFavorite={toggleFavorite} onOpen={(id) => go('detail', id)} onDealer={(slug) => go('dealer', slug)} />
+      ))}
+    </div>
+  );
+
+  const dealerCard = (dealer: Dealer, index: number) => {
+    const count = activeListings.filter((item) => item.dealerId === dealer.id).length;
+    return <button type="button" key={dealer.id} className="dealer-card" onClick={() => go('dealer', dealer.slug)} style={{ '--dealer-accent': dealer.accent } as React.CSSProperties}>
+      <div className="dealer-card-top"><span>{String(index + 1).padStart(2, '0')} / BAZAR</span><ArrowUpRight size={24} /></div>
+      <div className="dealer-monogram">{dealer.monogram}</div>
+      <div className="dealer-card-info"><div className="dealer-card-location"><MapPin size={14} /> {dealer.city.toUpperCase()} · {count} MOTOREK</div><h3>{dealer.name}</h3><p>{dealer.tagline}</p></div>
+    </button>;
+  };
+
+  return (
+    <div className="site-shell">
+      <div className="utility-strip"><span>MOTOBAZAR / CZ</span><span>INZERCE MOTOREK BEZ BALASTU.</span><span>VERZE 01 — DEMO</span></div>
+      <Header />
+
+      <main id="main-content">
+        {route.page === 'home' && (
+          <>
+            <section className="hero-section">
+              <div className="hero-content">
+                <div className="hero-serial"><span className="serial-square" /> TRH S MOTORKAMI / 01</div>
+                <h1>NAJDI<br /><em>TEN SVŮJ.</em></h1>
+                <p>Motorky. Přehledně. Bez oklik.</p>
+                <div className="hero-lower"><span>PROJEĎ NABÍDKU <ArrowDown size={17} /></span><span className="hero-symbol">M<span>\</span>B</span></div>
+              </div>
+              <div className="hero-visual">
+                <img src="https://images.unsplash.com/photo-1558981806-ec527fa84c39?auto=format&fit=crop&w=1600&q=85" alt="Motocykl – ilustrační fotografie" />
+                <span className="hero-visual-caption">/ SVOBODA NA DVOU KOLECH</span>
+                <div className="hero-visual-number">01<span>/04</span></div>
+              </div>
+            </section>
+
+            <div className="hero-search-wrap">
+              <SearchDock filters={filters} onChange={setFilters} onSearch={() => go('catalog')} items={activeListings} />
+            </div>
+
+            <div className="browse-rail">
+              <span>PROHLÉDNOUT PODLE TYPU</span>
+              <div className="browse-rail-links">
+                {['Sportovní', 'Naháče', 'Enduro / Adventure', 'Cestovní'].map((category, index) => (
+                  <button key={category} type="button" onClick={() => setQuickFilter(category)}><span>0{index + 1}</span>{category.toUpperCase()} <ArrowUpRight size={16} /></button>
+                ))}
+              </div>
+            </div>
+
+            <section className="content-section">
+              <SectionHeader kicker="01 / KATALOG" title="PRÁVĚ V NABÍDCE" action="VŠECHNY MOTORKY" onAction={() => go('catalog')} />
+              {renderCards(activeListings.slice().sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)).slice(0, 6))}
+            </section>
+
+            <section className="dealer-feature-section">
+              <div className="feature-copy"><span className="eyebrow-alt">02 / PRODEJCI</span><h2>BAZARY,<br /><em>CO MAJÍ STYL.</em></h2><p>Vlastní stránka. Jedna správa. Žádný zmatek.</p><button type="button" onClick={() => go('dealers')}>PROHLÉDNOUT BAZARY <ArrowUpRight size={20} /></button></div>
+              <div className="feature-dealers">{dealers.slice(0, 2).map((dealer, index) => dealerCard(dealer, index))}</div>
+            </section>
+          </>
+        )}
+
+        {route.page === 'catalog' && (
+          <>
+            <section className="page-heading"><div className="page-heading-top"><span>01 / KATALOG</span><span>{number(activeListings.length)} UKÁZKOVÝCH NABÍDEK</span></div><h1>VŠECHNY <em>MOTORKY.</em></h1></section>
+            <div className="catalog-search"><SearchDock filters={filters} onChange={setFilters} onSearch={() => window.scrollTo({ top: 400, behavior: 'smooth' })} compact items={activeListings} /></div>
+            <section className="catalog-results content-section">
+              <div className="results-bar">
+                <div className="results-left"><span className="results-label">VÝSLEDKY / {String(visibleListings.length).padStart(2, '0')}</span>{Object.values(filters).some(Boolean) && <button className="clear-action" onClick={() => setFilters(initialFilters)}>VYMAZAT FILTRY <X size={15} /></button>}</div>
+                <div className="sort-area"><SelectMenu label="ŘADIT" value={sort} onChange={(value) => setSort(value as Sort)} options={[{value:'newest',label:'Nejnovější'},{value:'cheapest',label:'Nejlevnější'},{value:'expensive',label:'Nejdražší'},{value:'least-km',label:'Nejméně km'}]} /></div>
+              </div>
+              {visibleListings.length ? renderCards(visibleListings) : <div className="empty-results"><Search size={32}/><h2>NIC TU NENÍ.</h2><p>Zkus trochu povolit filtry.</p><button type="button" className="primary-button" onClick={() => setFilters(initialFilters)}>VYMAZAT FILTRY <ArrowRight size={18}/></button></div>}
+            </section>
+          </>
+        )}
+
+        {route.page === 'favorites' && (
+          <section className="content-section standalone-section"><SectionHeader kicker="03 / OBLÍBENÉ" title="TVŮJ VÝBĚR." action="ZPĚT DO KATALOGU" onAction={() => go('catalog')} />
+            {favoriteListings.length ? renderCards(favoriteListings) : <div className="empty-results"><Heart size={30} /><h2>JEŠTĚ NIC.</h2><p>Ulož si motorky srdíčkem. Zůstanou tady v tomhle prohlížeči.</p><button className="primary-button" type="button" onClick={() => go('catalog')}>PROCHÁZET MOTORKY <ArrowRight size={18}/></button></div>}
+          </section>
+        )}
+
+        {route.page === 'dealers' && (
+          <section className="content-section dealers-page standalone-section">
+            <div className="page-heading page-heading-inner"><div className="page-heading-top"><span>02 / PRODEJCI</span><span>{String(dealers.length).padStart(2, '0')} BAZARY / DEMO</span></div><h1>TI, CO <em>PRODÁVAJÍ.</em></h1><p>Každý bazar má svůj vlastní prostor. Bez uniformních šablon.</p></div>
+            <div className="dealer-directory">{dealers.map((dealer, index) => dealerCard(dealer, index))}</div>
+            <div className="dealer-cta-inline"><span>MÁŠ VLASTNÍ MOTOBAZAR?</span><button type="button" onClick={() => go('dashboard')}>VYZKOUŠET SPRÁVU NABÍDKY <ArrowUpRight size={18} /></button></div>
+          </section>
+        )}
+
+        {route.page === 'dealer' && openedDealer && (
+          <>
+            <section className="dealer-page-hero" style={{ '--dealer-accent': openedDealer.accent } as React.CSSProperties}>
+              <div className="dealer-hero-info"><button className="back-on-dark" onClick={() => go('dealers')}><ArrowLeft size={16} /> VŠECHNY BAZARY</button><span className="dealer-hero-kicker">PARTNERSKÝ PROFIL / DEMO — {openedDealer.city.toUpperCase()}</span><h1>{openedDealer.name}</h1><p>{openedDealer.tagline}</p><div className="dealer-hero-bottom"><span><MapPin size={16}/> {openedDealer.city.toUpperCase()}</span><span>{String(activeListings.filter((item)=>item.dealerId===openedDealer.id).length).padStart(2,'0')} / MOTOREK V NABÍDCE</span></div></div>
+              <div className="dealer-hero-emblem"><span>{openedDealer.monogram}</span><ArrowUpRight size={46} /></div>
+            </section>
+            <section className="dealer-public-main content-section">
+              <div className="dealer-about"><div><span className="eyebrow-alt">01 / O BAZARU</span><h2>VÍME, CO<br/>JEZDÍ.</h2></div><p>{openedDealer.description}</p><button type="button" onClick={() => go('dashboard')}>OTEVŘÍT DEMO SPRÁVY <ArrowUpRight size={17}/></button></div>
+              <SectionHeader kicker="02 / NABÍDKA" title="MOTORKY BAZARU" />
+              {(() => {const items = activeListings.filter((item) => item.dealerId === openedDealer.id); return items.length ? renderCards(items) : <div className="empty-results"><h2>TEĎ ŽÁDNÉ MOTORKY.</h2><p>Nové inzeráty se objeví po zveřejnění v demo správě.</p></div>;})()}
+            </section>
+          </>
+        )}
+
+        {route.page === 'detail' && openedListing && (
+          <section className="detail-page standalone-section">
+            <div className="detail-crumb"><button onClick={() => go('catalog')}><ArrowLeft size={16}/> ZPĚT NA MOTORKY</button><span>DETAIL / {openedListing.brand.toUpperCase()}</span></div>
+            <div className="detail-topbar"><div><div className="eyebrow-alt">{openedListing.category.toUpperCase()} / {openedListing.year}</div><h1>{openedListing.title}</h1></div><button className={`detail-fav ${favorites.includes(openedListing.id) ? 'saved' : ''}`} onClick={() => toggleFavorite(openedListing.id)}><Heart size={21} fill={favorites.includes(openedListing.id) ? 'currentColor' : 'none'}/> {favorites.includes(openedListing.id) ? 'ULOŽENO' : 'ULOŽIT'}</button></div>
+            <div className="detail-layout"><div className="detail-gallery"><div className="detail-main-image"><img src={openedListing.gallery[imageIndex] || openedListing.image || fallbackImage} alt={`Ilustrační fotografie ${openedListing.title}`} onError={(event) => { event.currentTarget.src = fallbackImage; }}/><span>FOTO JE ILUSTRAČNÍ</span>{openedListing.gallery.length > 1 && <div className="gallery-buttons"><button onClick={()=>setImageIndex((prev)=>(prev-1+openedListing.gallery.length)%openedListing.gallery.length)} aria-label="Předchozí fotografie"><ChevronLeft size={20}/></button><button onClick={()=>setImageIndex((prev)=>(prev+1)%openedListing.gallery.length)} aria-label="Další fotografie"><ChevronRight size={20}/></button></div>}</div><div className="detail-thumbs">{openedListing.gallery.map((src,index)=><button type="button" key={`${src}-${index}`} className={imageIndex===index?'active':''} onClick={()=>setImageIndex(index)}><img src={src||fallbackImage} alt={`${openedListing.title} fotografie ${index+1}`} onError={(e)=>{e.currentTarget.src=fallbackImage;}} /></button>)}</div><div className="detail-description"><span className="eyebrow-alt">POPIS / DEMO</span><p>{openedListing.description || 'Bez dalšího popisu.'}</p></div></div>
+              <aside className="detail-aside"><div className="detail-price"><span>CENA</span><strong>{money(openedListing.price)}</strong></div><div className="technical-list">{[['ROK VÝROBY',String(openedListing.year)],['NAJETO',`${number(openedListing.km)} km`],['VÝKON',`${openedListing.power} kW`],['OBJEM',`${openedListing.engine} cm³`],['LOKALITA',openedListing.city],['UPRAVENO',formatUpdated(openedListing.updatedAt)]].map(([name,value])=><div key={name}><span>{name}</span><strong>{value}</strong></div>)}</div><div className="detail-seller"><span>PRODEJCE</span><strong>{getDealer(dealers,openedListing.dealerId)?.name||'SOUKROMÝ PRODEJCE'}</strong><small>{openedListing.city}</small>{openedListing.dealerId && <button type="button" onClick={()=>go('dealer',getDealer(dealers,openedListing.dealerId)?.slug)}>PROFIL BAZARU <ArrowUpRight size={17}/></button>}</div><button className="detail-contact" type="button" onClick={()=>notify('Kontaktování prodejců doplníme po spuštění skutečné inzerce.')}><ArrowUpRight size={19}/> KONTAKTOVAT PRODEJCE</button><p className="detail-note"><ShieldAlert size={15}/> Demo: fotky a technické údaje nejsou prověřené.</p></aside></div>
+          </section>
+        )}
+
+        {route.page === 'dashboard' && (
+          <Dashboard
+            dealers={dealers}
+            selectedDealerId={chosenDealer.id}
+            listings={listings}
+            onSelectDealer={setDealerId}
+            onSaveListing={onSaveListing}
+            onDeleteListing={(id) => setListings((prev) => prev.filter((item) => item.id !== id))}
+            onSaveDealer={onSaveDealer}
+            onPublic={(slug) => go('dealer', slug)}
+            onNotice={notify}
+          />
+        )}
+
+        {(route.page === 'detail' && !openedListing || route.page === 'dealer' && !openedDealer) && <section className="empty-results standalone-section"><h1>STRÁNKA NENALEZENA.</h1><button className="primary-button" onClick={() => go('home')}>ZPĚT NA ÚVOD <ArrowRight size={18}/></button></section>}
+      </main>
+
+      <footer className="site-footer"><div className="footer-logo">MOTO<span>BAZAR.</span></div><div><span>MADE FOR THE RIDE.</span><small>Jde o funkční prototyp. Nabídky, bazary a fotografie jsou ukázkové.</small></div><div className="footer-actions"><button type="button" onClick={() => go('dashboard')}>DEMO ADMINISTRACE <MoveUpRight size={16}/></button><button type="button" onClick={() => { if (window.confirm('Vrátit ukázková data do původního stavu?')) { resetDemo(); setListings(seededListings); setDealers(seededDealers); setFavorites([]); notify('Ukázková data obnovena.'); } }}>RESET DEMO DAT</button></div></footer>
+      {toast && <div className="toast" role="status"><Check size={17}/>{toast}<button type="button" aria-label="Zavřít oznámení" onClick={() => setToast('')}><X size={15}/></button></div>}
+    </div>
+  );
 }
-createRoot(document.getElementById('root')!).render(<React.StrictMode><App/></React.StrictMode>);
+
+createRoot(document.getElementById('root')!).render(<React.StrictMode><App /></React.StrictMode>);
