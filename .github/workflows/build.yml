@@ -1,82 +1,83 @@
-name: Build and deploy MotoBazar
-
+name: Build, test and deploy MotoBazar
 on:
   push:
-    branches: [main]
+    branches: [main, feat/compact-catalog-private-listings]
   pull_request:
     branches: [main]
-
+  workflow_dispatch:
 permissions:
-  contents: write
-
+  contents: read
 concurrency:
-  group: github-pages-${{ github.ref }}
-  cancel-in-progress: false
-
+  group: motobazar-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
     steps:
-      - name: Check out source
-        uses: actions/checkout@v4
-        with:
-          persist-credentials: true
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
       - name: Install dependencies
         run: npm install --no-audit --no-fund
-      - name: Check TypeScript
-        run: npx tsc --noEmit
-      - name: Build production site
+      - name: Unit tests
+        run: npm test
+      - name: Build Next.js static preview
         run: npm run build
-      - name: Verify compiled output
+      - name: Verify HTML and routes
         run: |
-          test -f dist/index.html
-          test -f dist/favicon.svg
-          test -f dist/placeholder-moto.svg
-          grep -q '/motobazar/assets/' dist/index.html
-          if grep -q '/src/main.tsx' dist/index.html; then
-            echo "ERROR: build still references TypeScript source"
-            exit 1
-          fi
-      - name: Keep main branch GitHub Pages compatible
-        if: github.event_name == 'push'
+          test -f out/index.html
+          test -f out/motorky/index.html
+          test -f out/motorka/m-101/index.html
+          grep -q 'Suzuki GSX-R 600' out/motorky/index.html
+          grep -q 'noindex' out/index.html
+      - name: Install test browsers
+        run: npx playwright install --with-deps chromium webkit
+      - name: Browser tests
+        run: npm run test:e2e
+      - name: Upload screenshots and test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-qa
+          path: |
+            qa/
+            playwright-report/
+            test-results/
+      - name: Keep branch-based Pages compatible
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         run: |
-          cp dist/index.html index.html
-          rm -rf assets
-          cp -R dist/assets ./assets
-          cp dist/favicon.svg favicon.svg
-          cp dist/placeholder-moto.svg placeholder-moto.svg
+          rm -rf assets _next
+          cp -R out/. ./
           touch .nojekyll
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A index.html assets favicon.svg placeholder-moto.svg .nojekyll
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src/catalog-app.tsx src/catalog-components.tsx src/catalog-editor.tsx package-lock.json next-env.d.ts tsconfig.json
+          git add -A index.html 404.html 404 favicon.svg placeholder-moto.svg .nojekyll assets _next motorky motorka bazary bazar oblibene moje sprava prodat pridat upravit tarify porovnani
+          find . -maxdepth 1 -name '*.txt' -exec git add {} \;
           if ! git diff --cached --quiet; then
-            git commit -m "chore: sync built site to branch [skip ci]"
+            git commit -m 'chore: sync tested Next.js preview [skip ci]'
             git push origin HEAD:main
           fi
-      - name: Upload compiled site for GitHub Pages
-        if: github.event_name == 'push'
+      - name: Upload Pages site
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@v4
         with:
-          path: ./dist
-
+          path: out
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy.outputs.page_url }}
     permissions:
       pages: write
       id-token: write
     steps:
-      - name: Deploy compiled site
-        id: deployment
+      - id: deploy
         uses: actions/deploy-pages@v4

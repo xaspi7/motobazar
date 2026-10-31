@@ -1,0 +1,1 @@
+export default function NotFound(){return <main style={{maxWidth:800,margin:'10vh auto',padding:24}}><h1>Stránka nenalezena</h1><p>Inzerát mohl být odstraněn nebo adresa není správná.</p><a className="mc-btn primary" href="/motobazar/motorky/">Zpět na motorky</a></main>;}

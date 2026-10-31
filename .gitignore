@@ -1,4 +1,10 @@
-node_modules
-dist
-.env
-.DS_Store
+node_modules/
+.next/
+out/
+dist/
+qa/
+playwright-report/
+test-results/
+*.tsbuildinfo
+.env*
+!.env.example

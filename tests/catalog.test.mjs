@@ -1,0 +1,17 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {seededListings} from '../src/data.ts';
+import {EMPTY,matchingAds,filterErrors,normalizeAd,publicationError,PRIVATE_OWNER,newAd,validateAd,canManage,safePhoto,filtersFrom,parseRoute,catalogHash} from '../src/catalog-model.ts';
+const ads=seededListings.map(normalizeAd);
+test('active listings only, no drafts or sold',()=>assert.equal(matchingAds(ads,EMPTY).length,seededListings.filter(a=>a.status==='active').length));
+test('brand, min/max price, year, km, power and displacement',()=>{const f={...EMPTY,brand:'Suzuki',minPrice:'130000',price:'140000',year:'2007',maxYear:'2009',minKm:'30000',km:'40000',minPower:'90',power:'100',minEngine:'590',engine:'610'};assert.deepEqual(matchingAds(ads,f).map(a=>a.id),['m-101']);});
+test('inverted ranges fail safely',()=>{assert.ok(filterErrors({...EMPTY,year:'2025',maxYear:'2010'}).length);assert.equal(matchingAds(ads,{...EMPTY,minPrice:'10',price:'5'}).length,0);});
+test('text search ignores Czech accents and supports multiple terms',()=>assert.ok(matchingAds(ads,{...EMPTY,query:'tenere yamaha'}).some(a=>a.id==='m-110')));
+test('seller and region filters',()=>{const xs=matchingAds(ads,{...EMPTY,seller:'private',region:'Hlavní město Praha'});assert.ok(xs.length);assert.ok(xs.every(a=>!a.dealerId&&a.city==='Praha'));});
+test('sort creates new array without mutating inputs',()=>{const order=ads.map(a=>a.id);const result=matchingAds(ads,EMPTY,'cheapest');assert.ok(result.every((a,i)=>!i||result[i-1].price<=a.price));assert.deepEqual(ads.map(a=>a.id),order);});
+test('unknown transmission not misrepresented as manual',()=>assert.equal(matchingAds(ads,{...EMPTY,transmission:'Manuální'}).length,0));
+test('two active private listings, drafts and current listing excluded',()=>{const one={...ads[0],id:'one',ownerKey:PRIVATE_OWNER,dealerId:null};const two={...one,id:'two'};assert.ok(publicationError([one,two],{...one,id:'three'}));assert.equal(publicationError([one,two],one),'');assert.equal(publicationError([one,{...two,status:'draft'}],{...one,id:'three'}),'');});
+test('cannot manage other demo users listings',()=>{assert.ok(canManage({...ads[0],ownerKey:PRIVATE_OWNER,dealerId:null},PRIVATE_OWNER));assert.equal(canManage(ads[0],PRIVATE_OWNER),false);});
+test('ad validation catches missing data',()=>{const a=newAd(PRIVATE_OWNER,[]);const errors=validateAd(a);assert.ok(errors.brand&&errors.email&&errors.gallery);});
+test('unsafe image URLs rejected',()=>{assert.equal(safePhoto('javascript:alert(1)'),'');assert.equal(safePhoto('data:text/html,hello'),'');assert.equal(safePhoto('https://example.com/photo.jpg'),'https://example.com/photo.jpg');});
+test('filters round-trip through URLs',()=>{const f={...EMPTY,query:'Honda Praha',brand:'Honda',region:'Hlavní město Praha',minPower:'35'};const route=parseRoute(catalogHash(f,'year',2));assert.deepEqual(filtersFrom(route.params),f);assert.equal(route.params.get('page'),'2');});
