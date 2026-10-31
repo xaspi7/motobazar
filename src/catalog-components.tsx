@@ -26,8 +26,13 @@ export function Icon({name,size=20}:{name:string;size?:number}){return <svg widt
 export const date=(s:string)=>{const d=new Date(s);return Number.isNaN(+d)?'':d.toLocaleDateString('cs-CZ',{day:'numeric',month:'numeric',year:'numeric'});};
 export const countLabel=(n:number)=>n===1?'inzerát':n>=2&&n<=4?'inzeráty':'inzerátů';
 export function Photo({src,alt='',large=false,eager=false}:{src:string;alt?:string;large?:boolean;eager?:boolean}){
+ const ref=React.useRef<HTMLImageElement>(null);
+ const [failed,setFailed]=React.useState(false);
  let url=src;try{const u=new URL(src);if(u.hostname==='images.unsplash.com'){u.searchParams.set('w',large?'1200':'480');u.searchParams.set('q','80');url=u.href;}}catch{}
- return <img src={url||fallbackImage} alt={alt} width={large?1200:480} height={large?900:320} loading={eager?'eager':'lazy'} decoding="async" onError={e=>{if(e.currentTarget.dataset.failed)return;e.currentTarget.dataset.failed='1';e.currentTarget.src=fallbackImage;}}/>;
+ React.useEffect(()=>{setFailed(false);},[src]);
+ // A remote image may fail before React has hydrated its onError handler.
+ React.useEffect(()=>{const img=ref.current;if(!failed&&img?.complete&&img.naturalWidth===0)setFailed(true);},[src,failed]);
+ return <img ref={ref} src={failed||!url?fallbackImage:url} alt={alt} width={large?1200:480} height={large?900:320} loading={eager?'eager':'lazy'} decoding="async" onError={()=>{if(!failed)setFailed(true);}}/>;
 }
 let fieldSequence=0;
 export class Field extends React.Component<{label:string;error?:string;children:ReactNode;className?:string}>{
