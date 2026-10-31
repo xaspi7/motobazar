@@ -17,9 +17,9 @@ if(!s.includes('NEXT_CATALOG_V1')){
  if(start<0||end<0)throw new Error('Cannot locate old router effect');
  s=s.slice(0,start)+` useEffect(()=>{
   const loaded=loadAds(), ds=loadDealers();setAds(loaded);setDealers(ds);
-  const p=readJSON(PROFILE_KEY,PRIVATE_OWNER);setProfile(typeof p==='string'&&(p===PRIVATE_OWNER||ds.some(d=>d.id===p))?p:PRIVATE_OWNER);
+  const p=readJSON<string>(PROFILE_KEY,PRIVATE_OWNER);setProfile(typeof p==='string'&&(p===PRIVATE_OWNER||ds.some(d=>d.id===p))?p:PRIVATE_OWNER);
   setSaved(readIds(FAVORITE_KEY));setCompared(readIds(COMPARE_KEY).slice(0,3));
-  setView(readJSON('motobazar:view:v4','list')==='grid'?'grid':'list');
+  setView(readJSON<string>('motobazar:view:v4','list')==='grid'?'grid':'list');
   setPreference(document.documentElement.dataset.theme==='dark'?'dark':'light',false);
   if(location.hash&&/^#(?:motorky|motorka|bazary|bazar|oblibene|sprava|moje|prodat|upravit|porovnani|tarify)(?:[/?]|$)/.test(location.hash)){
    location.replace(hrefFor(location.hash));return;
@@ -52,6 +52,9 @@ if(!s.includes('NEXT_CATALOG_V1')){
  s=s.replace(/<a(?=\s|>)/g,'<AppLink').replace(/<\/a>/g,'</AppLink>');
  fs.writeFileSync(path,s);
 }
+// Also repair sources already migrated by an earlier preview build.
+s=fs.readFileSync(path,'utf8').replaceAll("readJSON('motobazar:view:v4','list')", "readJSON<string>('motobazar:view:v4','list')");
+fs.writeFileSync(path,s);
 for(const file of ['src/catalog-components.tsx','src/catalog-editor.tsx']){
  let s=fs.readFileSync(file,'utf8');
  if(!s.includes("from './navigation'")){
