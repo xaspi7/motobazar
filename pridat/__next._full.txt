@@ -1,0 +1,24 @@
+1:"$Sreact.fragment"
+2:I[7121,[],""]
+3:I[4581,[],""]
+9:I[484,[],"OutletBoundary"]
+a:"$Sreact.suspense"
+c:"ViewportBoundary"
+d:I[484,[],"$c"]
+f:"MetadataBoundary"
+10:I[484,[],"$f"]
+12:I[7123,[],"default",1]
+:HL["/motobazar/_next/static/css/a90f4adb99fd4cc2.css","style"]
+4:["$","p",null,{"style":{"padding":"1rem"},"children":"Pro filtry, oblíbené a správu inzerátů zapni JavaScript. Veřejné nabídky jsou dostupné i bez něj."}]
+6:X
+7:[["children",{"s":"__PAGE__","h":512,"d":{"r":["$","$1","c",{"children":["$L8",null,["$","$L9",null,{"children":["$","$a",null,{"name":"Next.MetadataOutlet","children":"$@b"}]}]]}],"p":false,"v":null}}]]
+5:[["children",{"s":{"n":"segments","t":"oc","k":"pridat","s":["_not-found","_global-error"]},"h":66048,"d":{"r":["$","$1","c",{"children":[null,["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":"$undefined","forbidden":"$undefined","unauthorized":"$undefined"}]]}],"p":false,"v":"$6"},"c":"$Q7"}]]
+0:{"P":null,"c":["","pridat",""],"q":"","i":false,"t":{"t":{"s":"","h":131600,"d":{"r":["$","$1","c",{"children":[[["$","link","0",{"rel":"stylesheet","href":"/motobazar/_next/static/css/a90f4adb99fd4cc2.css","precedence":"next","crossOrigin":"$undefined","nonce":"$undefined"}]],["$","html",null,{"lang":"cs","suppressHydrationWarning":true,"children":[["$","head",null,{"children":[["$","script",null,{"dangerouslySetInnerHTML":{"__html":"(()=>{let p='system';try{p=localStorage.getItem('motobazar:theme:v1')||'system'}catch{}const dark=p==='dark'||(p!=='light'&&matchMedia('(prefers-color-scheme: dark)').matches);document.documentElement.dataset.theme=dark?'dark':'light';})();"}}],["$","link",null,{"rel":"preconnect","href":"https://images.unsplash.com"}]]}],["$","body",null,{"children":[["$","$L2",null,{"parallelRouterKey":"children","error":"$undefined","errorStyles":"$undefined","errorScripts":"$undefined","template":["$","$L3",null,{}],"templateStyles":"$undefined","templateScripts":"$undefined","notFound":[["$","main",null,{"style":{"maxWidth":800,"margin":"10vh auto","padding":24},"children":[["$","h1",null,{"children":"Stránka nenalezena"}],["$","p",null,{"children":"Inzerát mohl být odstraněn nebo adresa není správná."}],["$","a",null,{"className":"mc-btn primary","href":"/motobazar/motorky/","children":"Zpět na motorky"}]]}],[]],"forbidden":"$undefined","unauthorized":"$undefined"}],["$","noscript",null,{"children":"$4"}]]}]]}]]}],"p":false,"v":null},"c":"$Q5"},"h":{"r":["$","$1","h",{"children":[null,["$","$Ld",null,{"children":"$Le"}],["$","$L10",null,{"children":[["$","div",null,{"hidden":true,"children":["$","$a",null,{"name":"Next.Metadata","children":"$L11"}]}],null]}],null]}],"p":false,"v":null}},"m":"$undefined","G":["$12",[]],"S":true,"r":"$undefined","s":"$undefined","a":"$undefined","l":"$undefined","p":"$undefined","d":"$undefined","b":"ygrRlsThmsb6OohnyFFvl"}
+13:"static/chunks/app/%5B%5B...segments%5D%5D/page-d9800201ebfa77bd.js"
+14:I[2444,["145","$13"],"default"]
+6:C
+8:["$","$L14",null,{"initialRoute":"pridat"}]
+e:[["$","meta","0",{"charSet":"utf-8"}],["$","meta","1",{"name":"viewport","content":"width=device-width, initial-scale=1, viewport-fit=cover"}],["$","meta","2",{"name":"theme-color","content":"#ffffff","media":"(prefers-color-scheme: light)"}],["$","meta","3",{"name":"theme-color","content":"#121518","media":"(prefers-color-scheme: dark)"}]]
+15:I[6869,[],"IconMark"]
+b:null
+11:[["$","title","0",{"children":"Prodat motorku | MotoBazar"}],["$","meta","1",{"name":"description","content":"Katalog motorek s podrobnými filtry. Dva soukromé inzeráty zdarma, firemní profily. Funkční prototyp bez připojené databáze."}],["$","meta","2",{"name":"robots","content":"noindex, nofollow"}],["$","link","3",{"rel":"canonical","href":"https://xaspi7.github.io/motobazar/pridat/"}],["$","meta","4",{"property":"og:title","content":"Prodat motorku | MotoBazar"}],["$","meta","5",{"property":"og:description","content":"Katalog motorek s podrobnými filtry. Dva soukromé inzeráty zdarma, firemní profily. Funkční prototyp bez připojené databáze."}],["$","meta","6",{"property":"og:url","content":"https://xaspi7.github.io/motobazar/pridat/"}],["$","meta","7",{"property":"og:locale","content":"cs_CZ"}],["$","meta","8",{"property":"og:type","content":"website"}],["$","meta","9",{"name":"twitter:card","content":"summary"}],["$","meta","10",{"name":"twitter:title","content":"Prodat motorku | MotoBazar"}],["$","meta","11",{"name":"twitter:description","content":"Katalog motorek s podrobnými filtry. Dva soukromé inzeráty zdarma, firemní profily. Funkční prototyp bez připojené databáze."}],["$","link","12",{"rel":"icon","href":"/motobazar/favicon.svg"}],["$","$L15","13",{}]]
