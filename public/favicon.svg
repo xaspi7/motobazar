@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
-<rect width="64" height="64" fill="#171a18"/>
-<g fill="#f25138" transform="translate(8 9) skewX(-17)">
-<rect width="10" height="46" x="3" y="0"/>
-<rect width="10" height="30" x="18" y="16"/>
-<rect width="10" height="46" x="33" y="0"/>
-</g>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><rect width="48" height="48" rx="10" fill="#e32230"/><path d="M8 34 15 14h8l2 11 7-11h8l-7 20h-7l4-11-7 11h-5l-2-11-4 11Z" fill="#fff"/></svg>
